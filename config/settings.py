@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
-from decouple import config
+# from decouple import config
+import os
+
+config = lambda key, default=None: os.getenv(key, default)
 from dotenv import load_dotenv
 
 load_dotenv()
