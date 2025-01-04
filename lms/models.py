@@ -12,9 +12,8 @@ class Course(models.Model):
     )
     description = models.TextField(verbose_name="Описание курса", null=True, blank=True)
 
-    class Meta:
-        verbose_name = "Курс"
-        verbose_name_plural = "Курсы"
+    def __str__(self):
+        return self.title
 
 
 class Lesson(models.Model):
@@ -34,7 +33,7 @@ class Lesson(models.Model):
         null=True,
         blank=True,
     )
+    course = models.ForeignKey(Course, related_name="lessons", on_delete=models.CASCADE)
 
-    class Meta:
-        verbose_name = "Урок"
-        verbose_name_plural = "Уроки"
+    def __str__(self):
+        return self.title
