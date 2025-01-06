@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
 from lms.models import Course, Lesson
+from django.db import models
 
 
 class Payment(models.Model):
@@ -32,10 +33,3 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
-
-
-from django.db import models
-
-
-class User(models.Model):
-    username = models.CharField(max_length=150, default='default_username')
