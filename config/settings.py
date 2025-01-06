@@ -1,12 +1,6 @@
 import os
 from pathlib import Path
-# from decouple import config
-import os
-
-config = lambda key, default=None: os.getenv(key, default)
-from dotenv import load_dotenv
-
-load_dotenv()
+from decouple import config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,7 +21,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "users",
     "lms",
-    "django_filters",
+    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [
@@ -59,9 +53,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "config.wsgi.application"
-REST_FRAMEWORK = {
-    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"]
-}
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -117,4 +108,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-AUTH_USER_MODEL = "users.User"
+AUTH_USER_MODEL = 'users.User'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
