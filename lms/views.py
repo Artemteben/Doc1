@@ -1,10 +1,22 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from rest_framework.generics import RetrieveUpdateDestroyAPIView, CreateAPIView, ListCreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.response import Response
+
 from users.permissions import IsModerator, IsOwner
-from .models import Course, Lesson
+from .models import Course, Lesson, Subscription
 from .serializers import CourseSerializer, LessonSerializer
+from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
+from .paginators import CustomPagination
+
+
+class CourseViewSet(viewsets.ModelViewSet):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+    pagination_class = CustomPagination  # Пагинация
 
 
 class CourseCreateAPIView(CreateAPIView):
@@ -18,13 +30,6 @@ class CourseCreateAPIView(CreateAPIView):
     def perform_create(self, serializer):
         # Присваиваем владельца при создании курса
         serializer.save(owner=self.request.user)
-
-    def get_permissions(self):
-        if self.request.method in ['POST', 'DELETE']:
-            self.permission_classes = [~IsModerator]
-        else:
-            self.permission_classes = [IsAuthenticated]
-        return super().get_permissions()
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -53,16 +58,32 @@ class CourseViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Модераторы не могут удалять курсы.")
         instance.delete()
 
-    def get_permissions(self):
-        if self.action == 'create':
-            self.permission_classes = [IsAuthenticated, ~IsModerator]
-        elif self.action in ('update', 'partial_update', 'retrieve'):
-            self.permission_classes = [IsOwner | IsModerator]
-        elif self.action == 'destroy':
-            self.permission_classes = [IsOwner]
-        else:
-            self.permission_classes = [IsAuthenticated]
-        return super().get_permissions()
+
+class LessonViewSet(viewsets.ModelViewSet):
+    """
+    CRUD операции для уроков с проверкой прав.
+    """
+    queryset = Lesson.objects.all()
+    serializer_class = LessonSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Модераторы видят все уроки, пользователи — только свои
+        if self.request.user.groups.filter(name='Moderator').exists():
+            return Lesson.objects.all()
+        return Lesson.objects.filter(owner=self.request.user)
+
+    def perform_create(self, serializer):
+        # Запрет на создание уроков для модераторов
+        if self.request.user.groups.filter(name='Moderator').exists():
+            raise PermissionDenied("Модераторы не могут создавать уроки.")
+        serializer.save(owner=self.request.user)
+
+    def perform_destroy(self, instance):
+        # Запрет на удаление уроков для модераторов
+        if self.request.user.groups.filter(name='Moderator').exists():
+            raise PermissionDenied("Модераторы не могут удалять уроки.")
+        instance.delete()
 
 
 class LessonListCreateView(ListCreateAPIView):
@@ -77,13 +98,6 @@ class LessonListCreateView(ListCreateAPIView):
         # Присваиваем владельца при создании урока
         serializer.save(owner=self.request.user)
 
-    def get_permissions(self):
-        if self.request.method in ['POST', 'DELETE']:
-            self.permission_classes = [~IsModerator]
-        else:
-            self.permission_classes = [IsAuthenticated]
-        return super().get_permissions()
-
 
 class LessonDetailView(RetrieveUpdateDestroyAPIView):
     """
@@ -93,11 +107,21 @@ class LessonDetailView(RetrieveUpdateDestroyAPIView):
     serializer_class = LessonSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_permissions(self):
-        if self.request.method in ['PUT', 'PATCH', 'GET']:
-            self.permission_classes = [IsOwner | IsModerator]
-        elif self.request.method in ['DELETE']:
-            self.permission_classes = [IsOwner]
+
+class SubscriptionAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        course_id = request.data.get('course_id')
+        course_item = get_object_or_404(Course, id=course_id)
+        subs_item = Subscription.objects.filter(user=user, course=course_item)
+
+        if subs_item.exists():
+            subs_item.delete()
+            message = 'Подписка удалена'
         else:
-            self.permission_classes = [IsAuthenticated]
-        return super().get_permissions()
+            Subscription.objects.create(user=user, course=course_item)
+            message = 'Подписка добавлена'
+
+        return Response({"message": message})
