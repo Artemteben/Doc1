@@ -22,6 +22,8 @@ INSTALLED_APPS = [
     "users",
     "lms",
     'rest_framework_simplejwt',
+    'drf_yasg',
+    'stripe',
 ]
 
 MIDDLEWARE = [
@@ -113,5 +115,18 @@ AUTH_USER_MODEL = 'users.User'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+
     ],
+    'DEFAULT_SCHEMA_CLASS':
+        'drf_spectacular.openapi.AutoSchema',
 }
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'API Documentation',
+    'DESCRIPTION': 'Описание вашего API',
+    'VERSION': '1.0.0',
+}
+
+STRIPE_API_KEY = config("STRIPE_API_KEY")
+
+STRIPE_SECRET_KEY = config("STRIPE_API_KEY")
+STRIPE_PUBLIC_KEY = config("STRIPE_PUBLIC_KEY")
