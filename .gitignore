@@ -163,5 +163,3 @@ cython_debug/
 database.ini/!/
 .env
 !/.env
-!/.env
-!/.env
